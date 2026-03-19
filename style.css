@@ -13,15 +13,22 @@ body {
 }
 
 /* 畫布樣式 */
+/* 1. 遊戲容器：決定在手機螢幕上的佔比 */
+.game-container {
+    position: relative;
+    width: 95%;           /* 在手機上佔據 95% 寬度 */
+    max-width: 400px;      /* 電腦螢幕最大維持 400px */
+    margin: 10px auto;
+    touch-action: none;    /* 重要：這行能防止手機玩的時候畫面上下亂飄 */
+}
+
+/* 2. 畫布：強制填滿容器 */
 canvas {
     background-color: white;
     border: 2px solid #333;
     display: block;
-}
-/*手機畫面*/
-canvas {
-    max-width: 100%; /* 寬度不會超過螢幕 */
-    height: auto;    /* 高度自動縮放 */
+    width: 100%;          /* 讓畫布寬度 100% 跟著容器縮放 */
+    height: auto;         /* 高度自動依比例調整 */
 }
 
 /* 讓按鈕層浮在畫布正上方 */
