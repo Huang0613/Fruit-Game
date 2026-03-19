@@ -1,0 +1,51 @@
+body {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+}
+
+/* 容器定位 */
+.game-container {
+    position: relative;
+    width: 400px;
+    height: 600px;
+    margin: 20px auto;
+}
+
+/* 畫布樣式 */
+canvas {
+    background-color: white;
+    border: 2px solid #333;
+    display: block;
+}
+/*手機畫面*/
+canvas {
+    max-width: 100%; /* 寬度不會超過螢幕 */
+    height: auto;    /* 高度自動縮放 */
+}
+
+/* 讓按鈕層浮在畫布正上方 */
+#overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 20px;
+    cursor: pointer;
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: 0.2s;
+}
+
+button:hover {
+    background-color: #ee5253;
+    transform: scale(1.1);
+}
