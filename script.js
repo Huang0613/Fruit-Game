@@ -3,91 +3,97 @@ const ctx = canvas.getContext("2d");
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
 const scoreElement = document.getElementById("score");
-const livesElement = document.getElementById("lives"); // 取得生命值顯示元素
+const livesElement = document.getElementById("lives");
 
+// 遊戲設定
 let basket = { x: 160, y: 550, width: 80, height: 20 };
-let objects = []; // 將名稱改為 objects，因為裡面會有水果和炸彈
+let objects = [];
 let score = 0;
-let lives = 3; // 設定初始生命
+let lives = 3;
 let gameOver = false;
 let gameStarted = false;
 let spawnTimer;
 
-// 更新生命值顯示 (❤️)
+// --- 難度與等級變數 ---
+let lastTime = 0;
+const INITIAL_SPEED = 0.3;
+let currentLevel = 1; // 追蹤目前等級
+let levelUpTimer = 0; // 用來控制特效顯示的時間
+
 function updateLivesDisplay() {
     livesElement.innerText = "❤️".repeat(lives);
 }
 
-// 畫籃子
 function drawBasket() {
-    ctx.fillStyle = "#8B4513"; // 棕色
+    ctx.fillStyle = "brown";
     ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
 }
 
-// 畫物體 (水果或炸彈)
-function drawObject(obj) {
+function drawObject(o) {
     ctx.beginPath();
-    ctx.arc(obj.x, obj.y, 12, 0, Math.PI * 2);
-    ctx.fillStyle = obj.type === "bomb" ? "black" : "red"; // 炸彈黑色，水果紅色
+    ctx.arc(o.x, o.y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = o.type === "bomb" ? "black" : "red";
     ctx.fill();
     ctx.closePath();
 }
 
-// 生成物體 (隨機水果或炸彈)
 function spawnObject() {
-    let x = Math.random() * (canvas.width - 30) + 15;
-    let type = Math.random() < 0.2 ? "bomb" : "fruit"; // 20% 機率生成炸彈
+    let x = Math.random() * (canvas.width - 20) + 10;
+    let type = Math.random() < 0.4 ? "bomb" : "fruit";
     objects.push({ x: x, y: 0, type: type });
 }
 
-// 結束遊戲處理
 function endGame() {
     gameOver = true;
     clearInterval(spawnTimer);
 }
 
 // 更新遊戲畫面
-// 更新遊戲畫面
-// 更新遊戲畫面
-function update() {
+function update(timestamp) {
     if (gameOver) {
-        // 1. 畫出半透明遮罩
         ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // 2. 設定文字基本樣式
         ctx.fillStyle = "white";
         ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        
-        // 3. 繪製「遊戲結束」（位於按鈕上方）
         ctx.font = "bold 36px Arial";
         ctx.fillText("遊戲結束", canvas.width / 2, 220); 
-        
-        // 4. 繪製「最終得分」（位於按鈕下方）
-        // 將 Y 座標設為 380，避開中間約 300 位置的按鈕
+        ctx.fillStyle = "#FFD700";
         ctx.font = "bold 28px Arial";
-        ctx.fillStyle = "#FFD700"; // 改成金色，讓分數更顯眼
-        ctx.fillText("總分：" + score, canvas.width / 2, 380);
-        
-        restartBtn.style.display = "block"; 
+        ctx.fillText("最終得分：" + score, canvas.width / 2, 380);
+        restartBtn.style.display = "block";
         return;
     }
-  
+
+    const deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
+
+    // 1. ✨ 計算等級與速度
+    let newLevel = Math.floor(score / 10) + 1;
+    if (newLevel > currentLevel) {
+        currentLevel = newLevel;
+        levelUpTimer = 60; // 特效顯示約 1 秒 (60 幀)
+    }
+    let currentSpeed = INITIAL_SPEED + ( (currentLevel - 1) * 0.05);
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 2. ✨ 繪製等級文字 (固定在最上方)
+    ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText("LEVEL: " + currentLevel, 10, 25);
+
     drawBasket();
 
     for (let i = objects.length - 1; i >= 0; i--) {
         let o = objects[i];
-        o.y += 5; // 下落速度
+        o.y += currentSpeed * deltaTime;
 
-        // 碰撞檢查 (籃子接到物體)
         if (o.y + 10 > basket.y && o.x > basket.x && o.x < basket.x + basket.width) {
             if (o.type === "fruit") {
                 score++;
                 scoreElement.innerText = score;
             } else {
-                // 接到炸彈
                 lives--;
                 updateLivesDisplay();
                 if (lives <= 0) endGame();
@@ -96,41 +102,47 @@ function update() {
             continue;
         }
 
-        // 沒接到物體 (掉出底部)
         if (o.y > canvas.height) {
             if (o.type === "fruit") {
-                lives--; // 漏掉水果也要扣命
+                lives--;
                 updateLivesDisplay();
                 if (lives <= 0) endGame();
             }
             objects.splice(i, 1);
             continue;
         }
-
         drawObject(o);
+    }
+
+    // 3. ✨ 繪製 Level Up! 閃爍特效
+    if (levelUpTimer > 0) {
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.font = "bold 40px Arial";
+        // 讓文字有閃爍感 (利用 timer 的奇偶數)
+        ctx.fillStyle = levelUpTimer % 10 < 5 ? "#FF4500" : "#FFD700"; 
+        ctx.fillText("SPEED UP!!", canvas.width / 2, 150);
+        ctx.restore();
+        levelUpTimer--;
     }
 
     requestAnimationFrame(update);
 }
 
-// --- 控制邏輯 ---
-canvas.addEventListener("mousemove", (e) => {
+// 控制邏輯
+const handleMove = (clientX) => {
     const rect = canvas.getBoundingClientRect();
-    let mouseX = e.clientX - rect.left;
-    let newX = mouseX - basket.width / 2;
+    let x = clientX - rect.left;
+    let newX = x - basket.width / 2;
     if (newX < 0) newX = 0;
     if (newX > canvas.width - basket.width) newX = canvas.width - basket.width;
     basket.x = newX;
-});
+};
 
+canvas.addEventListener("mousemove", (e) => handleMove(e.clientX));
 canvas.addEventListener("touchmove", (e) => {
-    e.preventDefault(); 
-    const rect = canvas.getBoundingClientRect();
-    let touchX = e.touches[0].clientX - rect.left;
-    let newX = touchX - basket.width / 2;
-    if (newX < 0) newX = 0;
-    if (newX > canvas.width - basket.width) newX = canvas.width - basket.width;
-    basket.x = newX;
+    e.preventDefault();
+    handleMove(e.touches[0].clientX);
 }, { passive: false });
 
 startBtn.addEventListener('click', () => {
@@ -138,7 +150,8 @@ startBtn.addEventListener('click', () => {
     gameStarted = true;
     startBtn.style.display = "none";
     updateLivesDisplay();
-    update();
+    lastTime = performance.now();
+    requestAnimationFrame(update);
     spawnTimer = setInterval(spawnObject, 800);
 });
 
